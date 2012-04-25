@@ -13,8 +13,25 @@ import threading
 import Queue
 import os
 
-from VideoCapture import Device
+if os.name == 'posix':
+    import cv
+    cam = cv.CreateCameraCapture(0)
+else:
+    from VideoCapture import Device
+    try:
+        cam = Device()
+    except:
+        print 'Failed to construct webcam device'
+        cam = None
 
+def save_webcam(filename):
+    if os.name == 'posix':
+        for i in range(5):
+            img = cv.QueryFrame(cam)
+        cv.SaveImage(filename,img)
+    else:
+        cam.saveSnapshot(filename)
+    
 DEST_ADDR = '\x20\x72'
 
 RESET_ROBOT = True
@@ -67,11 +84,7 @@ def main():
     cl.daemon = True
     cl.start()
     
-    try:
-        cam = Device()
-    except:
-        print 'Failed to construct webcam device'
-        cam = None
+
     
     files = glob.glob('../../data/*.png')
     
@@ -98,7 +111,7 @@ def main():
                     increment = False
                     
                     if not cam == None:
-                        cam.saveSnapshot('../../data/img_%04d.png' % file_num)
+                        save_webcam('../../data/img_%04d.png' % file_num)
                         increment = True
                         
                     last_time = time.time()

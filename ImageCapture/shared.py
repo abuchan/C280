@@ -1,10 +1,14 @@
 import Queue
 import copy
-from scipy.interpolate import griddata
+#from scipy.interpolate import griddata
 import numpy
+import os
 
 #Base station
-BS_COMPORT = 'COM1'
+if os.name == 'posix':
+	BS_COMPORT = '/dev/ttyUSB0'
+else:
+	BS_COMPORT = 'COM1'
 BS_BAUDRATE = 230400
 #XBee
 #BS_COMPORT = 'COM6'
