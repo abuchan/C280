@@ -5,31 +5,45 @@ addpath([pwd '\libsvm-3.11\windows']);
 addpath([pwd '\filters']);
 addpath([pwd '\export_fig']);
 %% Classifier parameters
-TEST_PERCENT    = 0.25;         % Proportion the data reserved for testing
-TRAIN_OPTIONS   = '-s 0 -t 0';  % LIBSVM training options
-GAMMA           = 1/2000;       % RBF kernel standard deviation
-SOFT_MARGIN     = 1;            % SVM soft margin
-PREDICT_OPTIONS = '';           % LIBSVM predict options
+DATA_DIR        = '../../datasets/'; % Director which stores data sets
+TEST_PERCENT    = 0.90;              % Proportion the data reserved for testing
+TRAIN_OPTIONS   = '-s 0 -t 0';       % LIBSVM training options
+GAMMA           = 1/2000;            % RBF kernel standard deviation
+SOFT_MARGIN     = 1;                 % SVM soft margin
+PREDICT_OPTIONS = '';                % LIBSVM predict options
 
 %% Import data
 fprintf('Importing data...\n');
-frames = dir_to_dataset(DATA_DIR);
+% frames = dir_to_dataset(DATA_DIR);
+
+% Manual data import
+load([DATA_DIR 'keith']);
+frames = keith;
+clear keith;
+labels = labels_to_class(frames,'person') + 1;
+load([DATA_DIR 'keith_features']);
+features(isnan(features)) = 0;
+features = features';
 
 %% Partitiion the frames into training and test sets
 fprintf('Separating training and test sets...\n');
-[train test] = crossvalind('HoldOut', groups, TEST_PERCENT);
+[train test] = crossvalind('HoldOut', labels, TEST_PERCENT);
 
-%% Generate features
+%% Generatehelp  features
 fprintf('Extracting feature vectors...\n');
 % Make a dictionary for label numbers
-unique_labels = unique(labels);
+unique_labels = {'no person', 'person'};
 label_mapping = containers.Map( unique_labels, 1:length(unique_labels) );
 
 % Generate feature vectors
-[train_features train_labels] = img_to_features(frames(train));
-[test_features test_labels] = img_to_features(frames(test));
+%train_features = img_to_features(frames(train));
+train_features = features(train,:);
+train_labels = labels(train);
+%test_features = img_to_features(frames(test));
+test_features = features(test,:);
+test_labels = labels(test);
 
-save('features.mat','train_features','train_labels','test_features','test_labels');
+%save('features.mat','train_features','train_labels','test_features','test_labels');
 
 %% Train the SVM using the training set
 fprintf('Training...\n');
@@ -48,17 +62,18 @@ fprintf('Training...\n');
 %   end
 % end
 % Linear
-tic;
-bestcv = 0;
-for log2c = -0.1:0.1:5,
-    cmd = ['-t 0 -q -v 10 -c ', num2str(2^log2c)];
-    cv = svmtrain(train_labels, train_features, cmd);
-    if (cv >= bestcv),
-      bestcv = cv; bestc = 2^log2c;
-    end
-    fprintf('%g %g (best c=%g, rate=%g)\n', log2c, cv, bestc, bestcv);
-end
-toc;
+% tic;
+% bestcv = 0;
+% for log2c = -0.1:0.1:5,
+%     cmd = ['-t 0 -q -v 10 -c ', num2str(2^log2c)];
+%     cv = svmtrain(train_labels, train_features, cmd);
+%     if (cv >= bestcv)
+%       bestcv = cv; bestc = 2^log2c;
+%     end
+%     fprintf('%g %g (best c=%g, rate=%g)\n', log2c, cv, bestc, bestcv);
+% end
+% SOFT_MARGIN = cv;
+% toc;
 % Polynomial
 % bestcv = 0;
 % for deg = 1:5
@@ -75,9 +90,9 @@ toc;
 %       end
 %     end
 % end
-% tic;
-% model = svmtrain(train_labels, train_features, [TRAIN_OPTIONS ' -g ' num2str(GAMMA) ' -c ' num2str(SOFT_MARGIN)]);
-% toc;
+tic;
+model = svmtrain(train_labels, train_features, [TRAIN_OPTIONS ' -c ' num2str(SOFT_MARGIN)]);
+toc;
 %save('model.mat','model');
 
 %% Evaluate performance using the test set
