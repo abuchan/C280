@@ -3,7 +3,8 @@ function features = img_to_features(dataset)
 n_img = length(dataset);
 
 width = 448;
-img_block_sizes = [224 112 56 28];
+%img_block_sizes = [224 112 56 28];
+img_block_sizes = [224];
 thm_block_sizes = [8 4 2];
 
 n_bins = 8;
@@ -35,6 +36,6 @@ for i = 1:n_img
     thms(:,:,i) = (thms(:,:,i) - min_t)./(max_t-min_t);
 end
 
-features = block_features_from_images(imgs, img_block_sizes, {hnh hnh hnh hnh hnh});
+features = block_features_from_images(imgs, img_block_sizes, { hnh});
 
 features(isnan(features)) = 0;

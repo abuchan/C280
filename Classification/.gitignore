@@ -1,4 +1,5 @@
 /libsvm-3.11/
+/libsvm-3.12/
 /export_fig/
 *.mat
 *.asv

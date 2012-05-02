@@ -11,7 +11,7 @@ for c_i = 1:length(block_sizes)
     total_n_features = total_n_features + length(fun(zeros(c),c))*n_row*n_col/(c^2);
 end
 
-features = zeros(total_n_features,n_img);
+features = zeros(n_img,total_n_features);
 
 feature_start = 0;
 
@@ -27,7 +27,7 @@ for c_i = 1:length(block_sizes)
                 x_i = (1:n_row >= c*j+1) & (1:n_row <= c*(j+1));
                 y_i = (1:n_col >= c*(k-1)+1) & (1:n_col<=c*k);
                 f_i = feature_start+((n_features*(p_i-1)+1):(n_features*(p_i)));
-                features(f_i,i) = fun(images(x_i,y_i,i),c);
+                features(i,f_i) = fun(images(x_i,y_i,i),c);
             end
         end
     end
