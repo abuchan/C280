@@ -12,6 +12,8 @@ import datetime
 import threading
 import Queue
 import os
+import Image
+from thermDisplay import thermDisplay
 
 if os.name == 'posix':
     import cv
@@ -34,8 +36,11 @@ def save_webcam(filename):
     
 DEST_ADDR = '\x20\x72'
 
+DATA_DIR = '../data/'
+
 RESET_ROBOT = True
 USE_SERIAL = True
+DISPLAY = True
 
 if USE_SERIAL:
     try:
@@ -84,9 +89,12 @@ def main():
     cl.daemon = True
     cl.start()
     
-
+    if DISPLAY:
+        disp = thermDisplay(command_queue)
+        disp.daemon = True
+        disp.start()
     
-    files = glob.glob('../../data/*.png')
+    files = glob.glob(DATA_DIR + '*.png')
     
     
     if not files == []:
@@ -100,7 +108,10 @@ def main():
     
         if(not command_queue.empty()):
             cmd = command_queue.get().split()
-
+            
+            if len(cmd) == 0:
+                cmd = ['c']
+            
             if(len(cmd)>0):
                 if(cmd[0] == 'c'):
                     while not shared.data_queue.empty():
@@ -108,11 +119,8 @@ def main():
                         
                     xb_send(0, command.PYROELEC_COMMAND, pack('B',ord('k')))
                     
-                    increment = False
-                    
                     if not cam == None:
-                        save_webcam('../../data/img_%04d.png' % file_num)
-                        increment = True
+                        save_webcam(DATA_DIR + 'img_%04d.png' % file_num)
                         
                     last_time = time.time()
                     therm_data = None
@@ -121,18 +129,26 @@ def main():
                         if not shared.data_queue.empty():
                             therm_data = shared.data_queue.get()
                     
-                    if therm_data == None:
+                    if therm_data == None or len(therm_data)<8:
                         print 'Thermal Data Timeout'
+                        img_file = glob.glob(DATA_DIR + 'img_%04d.png' % file_num)
+                        if not img_file == []:
+                            os.remove(img_file[0])
                     else:
-                        tf = open('../../data/therm_%04d.txt'%file_num,'w')
-                        for row in therm_data:
-                            tf.write('%s\n' % row.__str__().strip('[]'))
+                        tf = open('../data/therm_%04d.txt'%file_num,'w')
+                        for r in range(8):
+                            tf.write('%s\n' % therm_data[r].__str__().strip('[]'))
                         tf.close()
-                        increment = True
-                    
-                    if increment:
+                        
+                        if DISPLAY:
+                            disp.update(DATA_DIR + 'img_%04d.png' % file_num, therm_data)
+                        
+                        lf = open('../data/lbl_%04d.txt'%file_num,'w')
+                        for i in range(1,len(cmd)):
+                            lf.write('%s\n' % cmd[i])
+                        lf.close()
+                        
                         file_num = file_num + 1
-                    
                     
                 elif(cmd[0] == 'a'):
                     print 'Echo Test'
