@@ -35,8 +35,6 @@ for i = 1:n_img
     thms(:,:,i) = (thms(:,:,i) - min_t)./(max_t-min_t);
 end
 
-img_features = block_features_from_images(imgs, img_block_sizes, {hnh hnh hnh hnh hnh});
-%thm_features = block_features_from_images(thms, thm_block_sizes, {hnh hnh hnh});
+features = block_features_from_images(imgs, img_block_sizes, {hnh hnh hnh hnh hnh});
 
-%features = [img_features; thm_features];
-features = img_features;
+features(isnan(features)) = 0;

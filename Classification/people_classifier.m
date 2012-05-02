@@ -1,39 +1,44 @@
+function [class_accuracy, time, predicted_labels, model] = people_classifier(features, labels, params)
+
 % Thermal/visible light camera fusion human detector
 % Authors: Austin D. Buchan, Ryan C. Julian
-clc; close all; clear all;
-addpath([pwd '\libsvm-3.11\windows']);
-addpath([pwd '\filters']);
-addpath([pwd '\export_fig']);
+
+class_accuracy = zeros(2);
+time = zeros(2,1);
+
+paths_to_add = {'\libsvm-3.11\windows', '\libsvm-3.12\windows', '\filters', '\export_fig'};
+for p = paths_to_add
+    d = [pwd cell2mat(p)];
+    if exist(d,'dir')
+        addpath(d);
+    end
+end
+
 %% Classifier parameters
-DATA_DIR        = '../../datasets/'; % Director which stores data sets
-TEST_PERCENT    = 0.90;              % Proportion the data reserved for testing
-TRAIN_OPTIONS   = '-s 0 -t 0';       % LIBSVM training options
-GAMMA           = 1/2000;            % RBF kernel standard deviation
-SOFT_MARGIN     = 1;                 % SVM soft margin
-PREDICT_OPTIONS = '';                % LIBSVM predict options
-
-%% Import data
-fprintf('Importing data...\n');
-% frames = dir_to_dataset(DATA_DIR);
-
-% Manual data import
-load([DATA_DIR 'keith']);
-frames = keith;
-clear keith;
-labels = labels_to_class(frames,'person') + 1;
-load([DATA_DIR 'keith_features']);
-features(isnan(features)) = 0;
-features = features';
+if nargin < 3
+    params.TEST_PERCENT    = 0.90;              % Proportion the data reserved for testing
+    params.TRAIN_OPTIONS   = '-s 0 -t 0 -q';       % LIBSVM training options
+    params.GAMMA           = 1/2000;            % RBF kernel standard deviation
+    params.SOFT_MARGIN     = 1;                 % SVM soft margin
+    params.PREDICT_OPTIONS = '';                % LIBSVM predict options
+    params.DISPLAY         = 0;
+end
 
 %% Partitiion the frames into training and test sets
-fprintf('Separating training and test sets...\n');
-[train test] = crossvalind('HoldOut', labels, TEST_PERCENT);
+if params.DISPLAY
+    fprintf('Separating training and test sets...\n');
+end
+
+[train test] = crossvalind('HoldOut', labels, params.TEST_PERCENT);
 
 %% Generatehelp  features
-fprintf('Extracting feature vectors...\n');
+if params.DISPLAY
+    fprintf('Extracting feature vectors...\n');
+end
+
 % Make a dictionary for label numbers
 unique_labels = {'no person', 'person'};
-label_mapping = containers.Map( unique_labels, 1:length(unique_labels) );
+%label_mapping = containers.Map( unique_labels, 1:length(unique_labels) );
 
 % Generate feature vectors
 %train_features = img_to_features(frames(train));
@@ -46,7 +51,10 @@ test_labels = labels(test);
 %save('features.mat','train_features','train_labels','test_features','test_labels');
 
 %% Train the SVM using the training set
-fprintf('Training...\n');
+if params.DISPLAY
+    fprintf('Training...\n');
+end
+
 % Automatic grid search tuning
 % Source: Xu Cui, http://www.alivelearn.net/?p=912, via LibSVM
 % RBF
@@ -91,17 +99,28 @@ fprintf('Training...\n');
 %     end
 % end
 tic;
-model = svmtrain(train_labels, train_features, [TRAIN_OPTIONS ' -c ' num2str(SOFT_MARGIN)]);
-toc;
+model = svmtrain(train_labels, train_features, [params.TRAIN_OPTIONS ' -c ' num2str(params.SOFT_MARGIN)]);
+time(1) = toc;
 %save('model.mat','model');
 
 %% Evaluate performance using the test set
-fprintf('Testing...\n');
-[predicted_labels, accuracy, decision] = svmpredict(test_labels, test_features, model, PREDICT_OPTIONS);
+if params.DISPLAY
+    fprintf('Testing...\n');
+end
+
+tic;
+[predicted_labels, accuracy, decision] = svmpredict(test_labels, test_features, model, params.PREDICT_OPTIONS);
+time(2) = toc;
+
 for t = 1:length(unique_labels)     % True
     for p = 1:length(unique_labels) % Predicted
         true_set = (test_labels == t);
         pred_set = (test_labels == t) & (predicted_labels == p);
-        display(sprintf('True: %s, Predicted: %s, %f %%', unique_labels{t}, unique_labels{p}, 100*sum(pred_set)/sum(true_set)));
+        result = 100*sum(pred_set)/sum(true_set);
+        class_accuracy(t,p) = result;
+        
+        if params.DISPLAY
+            display(sprintf('True: %s, Predicted: %s, %f %%', unique_labels{t}, unique_labels{p}, result));
+        end
     end
 end

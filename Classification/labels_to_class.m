@@ -7,5 +7,5 @@ if nargin < 3
 end
 
 for i = 1:length(dataset)
-    labels(i) = any(strcmp(dataset(i).lbl,include)) && ~any(strcmp(dataset(i).lbl,exclude));
+    labels(i) = (any(strcmp(dataset(i).lbl,include)) && ~any(strcmp(dataset(i).lbl,exclude)))+1;
 end
