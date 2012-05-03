@@ -1,4 +1,4 @@
-function [class_accuracy, time, predicted_labels, model] = people_classifier(features, labels, params)
+function [accuracy, class_accuracy, time, predicted_labels, model] = people_classifier(features, labels, params)
 
 % Thermal/visible light camera fusion human detector
 % Authors: Austin D. Buchan, Ryan C. Julian
