@@ -3,9 +3,9 @@ function features = img_to_features(dataset)
 n_img = length(dataset);
 
 width = 448;
-%img_block_sizes = [224 112 56 28];
-img_block_sizes = [224];
-thm_block_sizes = [8 4 2];
+img_block_sizes = [224 112 56 28];
+%img_block_sizes = [224];
+thm_block_sizes = [8 4 2 1];
 
 n_bins = 8;
 dir_edges = -pi:(2*pi/n_bins):pi;
@@ -24,6 +24,8 @@ hog_gaussian = @(block,n) hog(block,n,gd_filter)/(n^2);
 
 hnh = @(block,n) hog_norm_hist(block,n,tap_filter,dir_edges);
 
+flat_norm = @(block,n) reshape(block,[1 n^2]);
+
 imgs = zeros(width,width,n_img);
 thms = zeros(8,8,n_img);
 
@@ -36,6 +38,7 @@ for i = 1:n_img
     thms(:,:,i) = (thms(:,:,i) - min_t)./(max_t-min_t);
 end
 
-features = block_features_from_images(imgs, img_block_sizes, { hnh});
-
+features = block_features_from_images(imgs, img_block_sizes, {hnh hnh hnh hnh});
+%features = [features block_features_from_images(thms, thm_block_sizes, {hnh hnh hnh hnh})];
+features = [features block_features_from_images(thms, [8], {flat_norm})];
 features(isnan(features)) = 0;
