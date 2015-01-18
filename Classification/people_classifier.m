@@ -1,4 +1,4 @@
-function [accuracy, class_accuracy, time, predicted_labels, model] = people_classifier(features, labels, params)
+function [accuracy, class_accuracy, time, predicted_labels, test_labels, model] = people_classifier(features, labels, train,test,params)
 
 % Thermal/visible light camera fusion human detector
 % Authors: Austin D. Buchan, Ryan C. Julian
@@ -15,7 +15,7 @@ for p = paths_to_add
 end
 
 %% Classifier parameters
-if nargin < 3
+if nargin < 5
     params.TEST_PERCENT    = 0.90;              % Proportion the data reserved for testing
     params.TRAIN_OPTIONS   = '-s 0 -t 0 -q';       % LIBSVM training options
     params.GAMMA           = 1/2000;            % RBF kernel standard deviation
@@ -29,7 +29,7 @@ if params.DISPLAY
     fprintf('Separating training and test sets...\n');
 end
 
-[train test] = crossvalind('HoldOut', labels, params.TEST_PERCENT);
+%[train test] = crossvalind('HoldOut', labels, params.TEST_PERCENT);
 
 %% Generatehelp  features
 if params.DISPLAY

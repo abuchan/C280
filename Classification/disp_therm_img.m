@@ -15,9 +15,13 @@ for r = 1:3
     for c = 1:4
         i = r+3*(c-1);
         if i <= n_img
-            subplot(3,4,i)
+            h = subplot(3,4,i);
+            p = get(h, 'pos');
+            p = p + [0 0 0.04 0.04];
+            set(h,'pos',p);
             imagesc(imgs(i).img)
             axis equal
+            axis off
             axis([0 640 0 480])
             hold on
             thermal = zeros(9);
